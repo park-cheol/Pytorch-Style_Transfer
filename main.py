@@ -57,7 +57,6 @@ parser.add_argument('--gpu', default=None, type=int,
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
 def main():
     args = parser.parse_args()
 
@@ -200,3 +199,4 @@ def losses(cnn, content_img, style_img):
 
 if __name__ == '__main__':
     main()
+# import로 호출되어 사용 시 파일 명이 뜸 / 처음 실행한 파일은 __main__
