@@ -143,42 +143,6 @@ def train(epoch, vgg, input_img, content_losses, style_losses, content_score, st
         torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output5_%s.png' % (epoch))
         print("save image")
 
-
-
-
-
-
-
-
-
-
-
-
-    print("[ start ]")
-    for epoch in range(args.epochs):
-        input_img.data.clamp_(0, 1)
-        optimizer.zero_grad()
-        vgg(input_img)
-        content_score = 0
-        style_score = 0
-
-        for content in content_losses:
-            content_score += content.loss
-        for style in style_losses:
-            style_score += style.loss
-        content_score *= args.content_weight
-        style_score *= args.style_weight
-        loss = content_score + style_score
-        loss.backward()
-
-        if epoch % 100 == 0:
-            print(f"[ Step: {epoch} / content loss: {content_score.item()} / style loss: {style_score.item()}")
-        if epoch % 5000 == 0:
-            torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output/output_%s.png' % (epoch))
-            print("Save image")
-
-        optimizer.step()
-
 if __name__ == '__main__':
     main()
 # import로 호출되어 사용 시 파일 명이 뜸 / 처음 실행한 파일은 __main__
