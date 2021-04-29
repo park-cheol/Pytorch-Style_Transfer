@@ -59,10 +59,11 @@ parser.add_argument('--seed', default=None, type=int,
 parser.add_argument('--gpu', default=None, type=int,
                     help='gpu id to use. ')
 
+args = parser.parse_args()
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def main():
-    args = parser.parse_args()
 
     if args.seed is not None:  # reproductive
         random.seed(args.seed)
@@ -130,7 +131,7 @@ def train(epoch, vgg, input_img, content_losses, style_losses, content_score, st
     for sl in style_losses:
         style_score += sl.loss
 
-    style_score *= 1e5
+    style_score *= args.style_weight / args.content_weight
     loss = content_score + style_score
     loss.backward()
 
@@ -140,7 +141,7 @@ def train(epoch, vgg, input_img, content_losses, style_losses, content_score, st
         print(f"[ step:{epoch} / content loss: {content_score.item()} / style loss: {style_score.item()}")
 
     if epoch % 5000 == 0: # save image per 5000
-        torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output5_%s.png' % (epoch))
+        torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output1_%s.png' % (epoch))
         print("save image")
 
 if __name__ == '__main__':
