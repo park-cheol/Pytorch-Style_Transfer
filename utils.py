@@ -33,22 +33,3 @@ class Normalization(nn.Module):
     def forward(self, img):
         return (img - self.mean) / self.std
 
-class ContentLoss(nn.Module):
-    def __init__(self, content_image):
-        super(ContentLoss, self).__init__()
-        self.content = content_image.detach()
-
-    def forward(self, noise):
-        self.loss = F.mse_loss(noise, self.content)
-        return noise
-
-class StyleLoss(nn.Module):
-    def __init__(self, style_image):
-        super(StyleLoss, self).__init__()
-        self.style = gram_matrix(style_image).detach()
-
-    def forward(self, noise):
-        gram = gram_matrix(noise)
-        self.loss = F.mse_loss(gram, self.style)
-
-        return noise
