@@ -108,20 +108,21 @@ def main_worker(gpu, ngpus_per_node, args):
 
     input_img = torch.empty_like(content_img).uniform_(0, 1).to(device)
 
+    vgg, style_losses, content_losses = vgg19(content_img, style_img)
 
-    vgg, content_losses, style_losses = vgg19(content_img, style_img)
+    print(vgg)
 
-    content_score = 0
-    style_score = 0
     for epoch in range(args.epochs):
         # train
-        train(epoch, vgg, content_losses, style_losses, content_score, style_score)
+        train(epoch, vgg, input_img, content_losses, style_losses)
 
+def train(epoch, vgg, input_img, content_losses, style_losses):
+    content_score = 0
+    style_score = 0
 
-
-def train(epoch, vgg, input_img, content_losses, style_losses, content_score, style_score):
     optimizer = torch.optim.Adam([input_img.requires_grad_()])
     optimizer.zero_grad()
+
     input_img.data.clamp_(0, 1)
     vgg(input_img)
 
@@ -135,14 +136,14 @@ def train(epoch, vgg, input_img, content_losses, style_losses, content_score, st
     loss = content_score + style_score
     loss.backward()
 
-    optimizer.step()
-
     if epoch % 100 == 0: # log
         print(f"[ step:{epoch} / content loss: {content_score.item()} / style loss: {style_score.item()}")
 
     if epoch % 5000 == 0: # save image per 5000
-        torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output1_%s.png' % (epoch))
+        torchvision.utils.save_image(input_img.cpu().detach()[0], 'image/output1/image_%s.png' % (epoch))
         print("save image")
+
+    optimizer.step()
 
 if __name__ == '__main__':
     main()

@@ -10,10 +10,11 @@ import torchvision.models as models
 
 from PIL import Image
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def load_image(filename, size=None):
     img = Image.open(filename).convert('RGB') # RGB 전환
     if size is not None:
-        img = img.resize((size, size), Image.ANTIALIAS) #!TODO Interpolate
+        img = img.resize((size, size), Image.ANTIALIAS) #TODO Interpolate
     return img
 
 def gram_matrix(y):
@@ -27,8 +28,8 @@ def gram_matrix(y):
 class Normalization(nn.Module):
     def __init__(self, mean, std):
         super(Normalization,  self).__init__()
-        self.mean = mean.clone().view(-1, 1, 1)
-        self.std = std.clone().view(-1, 1, 1)
+        self.mean = torch.tensor(mean).view(-1, 1, 1).to(device)
+        self.std = torch.tensor(std).view(-1, 1, 1).to(device)
 
     def forward(self, img):
         return (img - self.mean) / self.std
