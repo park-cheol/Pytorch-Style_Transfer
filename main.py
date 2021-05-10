@@ -1,4 +1,5 @@
 import argparse
+import os
 import random
 import numpy
 import PIL
@@ -56,8 +57,22 @@ parser.add_argument('--pretrained', default=True, dest='pretrained', action='sto
 # action='store_true'(stroe_false): 인자를 적으면 해당 인자에 True나 False 저장
 parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
+# distributed training
 parser.add_argument('--gpu', default=None, type=int,
                     help='gpu id to use. ')
+# parser.add_argument('--world-size', default=-1, type=int,
+#                     help='number of nodes for distributed training. ')
+# parser.add_argument('--rank', default=-1, type=int,
+#                     help='node rank for distributed training. ')
+# parser.add_argument('--dist-url', default='tcp://224.66.41.62:23456', type=str,
+#                     help='url seed to set up distributed training. ')
+# parser.add_argument('--dist-backend', default='nccl', type=str,
+#                     help='distributed backend. ')
+# parser.add_argument('--multiprocessing-distributed', action='store_true',
+#                     help='Use multi-processing distributed training to launch '
+#                          'N processes per node, which has N GPUs. This is the '
+#                          'fastest way to use PyTorch for either single node or '
+#                          'multi node data parallel training ')
 
 args = parser.parse_args()
 
@@ -75,11 +90,24 @@ def main():
         # 권장: 실험하는 초기 단계가 아닌 모델과 코드를 배포해야 하는 단게에서 사용
     if args.gpu is not None:
         warnings.warn('특정 GPU-id를 선택. 이는 data parallelism을 사용 할 수 없습니다. ')
-    # data parallelism을 사용하여 여러 GPU 사용[ nn.DataParallel(model) ]
+    # distributed-data parallelism을 사용하여 여러 GPU 사용[ nn.DataParallel(model) ]
     # torch.cuda.device_count() > 1 ==> GPU 몇 개인지 파악, 1개 초과만
     # TODO 데이터병렬처리, 분산학습
+    # if args.dist_url == "env://" and args.world_size == -1:
+    #     args.world_size = int(os.environ["WORLD_SIZE"])
+        # os.environ: 운영 체제에 등록되어 있는 모든 환경변수
+        # 환경변수: 모든 쉘에 영향을 미치는 변수(터미널창에서 전역변수라고 생각)
+        # os.environ["HOME"] 식으로 HOME에 저장되어있는 값 ==> '/home/jnu2'
 
-    ngpus_per_node = torch.cuda.device_count()  # 현재 컴퓨터로 1
+    # args.distributed = args.world_size > 1 or args.multiprocessing_distributed
+    ngpus_per_node = torch.cuda.device_count()  # 사용 가능 GPU
+    # if args.multiprocessing_distributed:
+        # ngpus_per_node processes per node 가지고있으므로
+        # the total world_size needs to be adjusted accordingly
+        # args.world_size = ngpus_per_node * args.world_size
+        # Use torch.multiprocessing.spawn to launch distributed processes: the
+        # main_worker process function
+        # mp.spawn(main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, args))
     main_worker(args.gpu, ngpus_per_node, args)
 
 
@@ -89,9 +117,28 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.gpu is not None:
         print("use GPU: {} for training".format(args.gpu))
 
+    # if args.distributed:
+    #     if args.dist_url == "env://" and args.rank == -1:
+    #         args.rank = int(os.environ["RANK"])
+    #     if args.multiprocessing_distributed:
+    #         # For multiprocessing distributed training, rank needs to be the
+    #         # global rank among all the processes
+    #         args.rank = args.rank * ngpus_per_node + gpu
+    #     dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
+    #                             world_size=args.world_size, rank=args.rank)
+
+
     # CUDA
     if not device == 'cuda':  # False
         print('using CPU, this will be slow')
+
+    # elif args.distributed:
+    #     # For multiprocessing distributed, DistributedDataParallel constructor
+    #     # should always set the single device scope, otherwise,
+    #     # DistributedDataParallel wii use all available devices.
+    #     if args.gpu is not None:
+    #         torch.cuda.set_device(args.gpu)
+
     elif args.gpu is not None:
         torch.cuda.set_device(args.gpu)  # 특정 GPU 선택 [0]
 
@@ -115,6 +162,7 @@ def main_worker(gpu, ngpus_per_node, args):
     for epoch in range(args.epochs):
         # train
         train(epoch, vgg, input_img, content_losses, style_losses)
+
 
 def train(epoch, vgg, input_img, content_losses, style_losses):
     content_score = 0
